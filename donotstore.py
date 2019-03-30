@@ -1,0 +1,15 @@
+import envipyengine
+envipyengine.config.set('engine', 'C:/Program Files/Exelis/IDL82/bin/bin.x86')
+
+from envipyengine import Engine
+import numpy as np
+import sklearn
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import SGDRegressor
+
+import os
+m = np.zeros((2,3,4))
+z = np.ones((3,4))
+m1 = np.append(m,z)
+m2 = np.dstack((m,z))
+print(m2)
