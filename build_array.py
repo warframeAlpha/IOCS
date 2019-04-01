@@ -7,6 +7,7 @@ from scipy.optimize import curve_fit
 #### read envi image
 import spectral.io.envi as envi
 from spectral import *
+import csv
     # need to find the path first
     # locate the target folder 
 folder = 'D:/HOMEWORK/rslab/IOCS_2019/ENVI_daily_data/decay' # 要改
@@ -26,7 +27,7 @@ img_index = 0 # The depth index of image matrix
 
 for date in date:
     for h in range(8):# find the complete file path
-        print(t,img_index)
+        # print(t,img_index)
         ss_file = folder + '/'+ date+'/' +date + '_' + str(h) + '_SS.hdr'
         print(ss_file) # prove that each file is found        
         
@@ -38,7 +39,7 @@ for date in date:
             
         t = t + 1 
     t = t + 16
-print(img_matrix.shape)
+# print(img_matrix.shape)
 def image_statistic(img_matrix,img_row,img_col):
     #### generate mean and variance
     img_mean = np.zeros((row, col))
@@ -58,7 +59,7 @@ def image_statistic(img_matrix,img_row,img_col):
     envi.save_image('Variance.hdr', img_variance)
 def regression_form(t,a,b,c):
     with np.errstate(divide = 'ignore'):
-        s = a*np.exp(-1*b*t)+c
+        s = np.float64(a*np.exp(-1*b*t)+c)
     return s
 
 def do_regression(img_matrix, t_martix,row,col):
@@ -67,23 +68,44 @@ def do_regression(img_matrix, t_martix,row,col):
     c_matrix = np.zeros((row, col))
     for i in range(row):
         for j in range(col):
+
+
             ss_temp = []
             t_temp = [] #this array restore the hour 
             for t in range(total_image_num):
                 if img_matrix[t][i][j] > 0:
                     ss_temp.append(img_matrix[t][i][j]) # temporary matrix to secure the sequence of value in different time
                     t_temp.append(t_martix[t]) # temporary matrix to secure the hours correlate to the m_temp
-                # regression: concentration = a*e^(-b*t)+c
-            [popt, pcov] = curve_fit(regression_form,t_temp,ss_temp)
-            a_matrix[i][j] = popt[0]
-            b_matrix[i][j] = popt[1]
-            c_matrix[i][j] = popt[2]
+            ## find the max value
+            t_use = [] # matrix used to regression
+            ss_use = []
+            for n in range(ss_temp.index(max(ss_temp)), len(ss_temp)):
+                t_use.append(t_temp[n])
+                ss_use.append(ss_temp[n])
+                            # regression: concentration = a*e^(-b*t)+c
+            if len(t_temp)>3:
+                [popt, pcov] = curve_fit(regression_form,t_use,ss_use,maxfev = 800)
+                a_matrix[i][j] = popt[0]
+                b_matrix[i][j] = popt[1]
+                c_matrix[i][j] = popt[2]
+
+            # print(t_temp)
+            if i == 0 and j == 0:
+                with open('regression.csv','w') as csvfile:
+                    save = csv.writer(csvfile, delimiter = ',')
+                    save.writerow(t_temp)
+                    save.writerow(ss_temp)            
+
+
     return a_matrix, b_matrix, c_matrix
+
     
 #### execute
 # image_statistic(img_matrix,row,col)
-print(t_martix[20])
+# print(t_martix[20])
+# do_regression(img_matrix,t_martix,row,col)
 result = do_regression(img_matrix,t_martix,row,col)
+print(result)
 a_matrix = result[0]
 b_matrix = result[1]
 c_matrix = result[2]
