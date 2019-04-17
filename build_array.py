@@ -79,12 +79,13 @@ def do_regression(img_matrix, t_martix,row,col):
             ## find the max value
             t_use = [] # matrix used to regression
             ss_use = []
-            for n in range(ss_temp.index(max(ss_temp)), len(ss_temp)):
-                t_use.append(t_temp[n])
-                ss_use.append(ss_temp[n])
+            if len(t_temp) >1:
+                for n in range(ss_temp.index(max(ss_temp)), len(ss_temp)):
+                    t_use.append(t_temp[n])
+                    ss_use.append(ss_temp[n])
                             # regression: concentration = a*e^(-b*t)+c
-            if len(t_temp)>3:
-                [popt, pcov] = curve_fit(regression_form,t_use,ss_use,maxfev = 800)
+            if len(t_use)>3:
+                [popt, pcov] = curve_fit(regression_form, t_use, ss_use,maxfev = 100000)
                 a_matrix[i][j] = popt[0]
                 b_matrix[i][j] = popt[1]
                 c_matrix[i][j] = popt[2]
@@ -109,20 +110,3 @@ print(result)
 a_matrix = result[0]
 b_matrix = result[1]
 c_matrix = result[2]
-
-# error code = 
-build_array.py:62: RuntimeWarning: overflow encountered in exp
-  s = np.float64(a*np.exp(-1*b*t)+c)
-build_array.py:62: RuntimeWarning: overflow encountered in multiply
-  s = np.float64(a*np.exp(-1*b*t)+c)
-Traceback (most recent call last):
-  File "build_array.py", line 107, in <module>
-    result = do_regression(img_matrix,t_martix,row,col)
-  File "build_array.py", line 87, in do_regression
-    [popt, pcov] = curve_fit(regression_form,t_use,ss_use,maxfev = 800)
-  File "D:\toolbox\python\lib\site-packages\scipy\optimize\minpack.py", line 751, in curve_fit
-    res = leastsq(func, p0, Dfun=jac, full_output=1, **kwargs)
-  File "D:\toolbox\python\lib\site-packages\scipy\optimize\minpack.py", line 386, in leastsq
-    raise TypeError('Improper input: N=%s must not exceed M=%s' % (n, m))
-TypeError: Improper input: N=3 must not exceed M=2
-}
