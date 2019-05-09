@@ -43,7 +43,8 @@ for date in date:
 def image_statistic(img_matrix,img_row,img_col):
     #### generate mean and variance
     img_mean = np.zeros((row, col))
-    img_variance = np.zeros((row, col))    
+    img_variance = np.zeros((row, col))
+    img_max_difference = np.zeros((row, col))
 #### input a 3D array, make it into 2D image
     for i in range(row):
         for j in range(col):
@@ -51,12 +52,16 @@ def image_statistic(img_matrix,img_row,img_col):
             for t in range(total_image_num):
                 if img_matrix[t][i][j] > 0:
                     m_temp.append(img_matrix[t][i][j])
-            img_mean[i][j] = np.mean(m_temp)
-            img_variance[i][j] = np.var(m_temp)
+            if len(m_temp)>3:
+                img_mean[i][j] = np.mean(m_temp)
+                img_variance[i][j] = np.var(m_temp)
+                img_max_difference[i][j] = max(m_temp)-min(m_temp)
+            
 
     ####Save as image in ENVI format
     envi.save_image('Mean.hdr', img_mean)
     envi.save_image('Variance.hdr', img_variance)
+    envi.save_image('max_difference.hdr', img_max_difference)
 def regression_form(t,a,b,c):
     with np.errstate(divide = 'ignore'):
         s = np.float64(a*np.exp(-1*b*t)+c)
@@ -84,29 +89,48 @@ def do_regression(img_matrix, t_martix,row,col):
                     t_use.append(t_temp[n])
                     ss_use.append(ss_temp[n])
                             # regression: concentration = a*e^(-b*t)+c
-            if len(t_use)>3:
-                [popt, pcov] = curve_fit(regression_form, t_use, ss_use,maxfev = 100000)
-                a_matrix[i][j] = popt[0]
-                b_matrix[i][j] = popt[1]
-                c_matrix[i][j] = popt[2]
+            if len(t_use)>5:
+                try:
+                    [popt, pcov] = curve_fit(regression_form, t_use, ss_use,maxfev = 500,p0=[13,0.011,1])
+                    a_matrix[i][j] = popt[0]
+                    b_matrix[i][j] = popt[1]
+                    c_matrix[i][j] = popt[2]
+                except:
+                    continue
 
             # print(t_temp)
-            if i == 0 and j == 0:
+            ############write a csv file to help us define the initial guess
+            if i == 100 and j == 100:
                 with open('regression.csv','w') as csvfile:
                     save = csv.writer(csvfile, delimiter = ',')
-                    save.writerow(t_temp)
-                    save.writerow(ss_temp)            
+                    save.writerow(t_use)
+                    save.writerow(ss_use)            
 
 
     return a_matrix, b_matrix, c_matrix
-
-    
+#save array into envi_file:
+def save_as_envi(img_matrix):
+    # let img_matrix[t][row][col] become img_matrix[row][col][t] because the third index will become the band numbers.
+    img_matrix2 = np.zeros([488,570,56])
+    for t in range(img_matrix.shape[0]):
+        for i in range(img_matrix.shape[1]):
+            for j in range(img_matrix.shape[2]):
+                img_matrix2[i][j][t] = img_matrix[t][i][j] 
+    envi.save_image('img_matrix2.hdr',img_matrix2)
 #### execute
+
+########### save image
+# save_as_envi(img_matrix)
+########### statistic
 # image_statistic(img_matrix,row,col)
-# print(t_martix[20])
+########### regression
 # do_regression(img_matrix,t_martix,row,col)
+
 result = do_regression(img_matrix,t_martix,row,col)
-print(result)
 a_matrix = result[0]
 b_matrix = result[1]
 c_matrix = result[2]
+
+envi.save_image('b.hdr', b_matrix)
+envi.save_image('a.hdr', a_matrix)
+envi.save_image('c.hdr', c_matrix)
