@@ -89,13 +89,17 @@ def do_regression(img_matrix, t_martix,row,col):
                     t_use.append(t_temp[n])
                     ss_use.append(ss_temp[n])
                             # regression: concentration = a*e^(-b*t)+c
-            if len(t_use)>5:
+                    difference = max(ss_use)-min(ss_use)
+            if len(t_use)>5 :
                 try:
-                    [popt, pcov] = curve_fit(regression_form, t_use, ss_use,maxfev = 500,p0=[13,0.011,1])
+                    [popt, pcov] = curve_fit(regression_form, t_use, ss_use,maxfev = 1000,p0=[13,0.011,1])
                     a_matrix[i][j] = popt[0]
                     b_matrix[i][j] = popt[1]
                     c_matrix[i][j] = popt[2]
                 except:
+                    a_matrix[i][j] = 0
+                    b_matrix[i][j] = 0
+                    c_matrix[i][j] = 0
                     continue
 
             # print(t_temp)
@@ -106,6 +110,41 @@ def do_regression(img_matrix, t_martix,row,col):
                     save.writerow(t_use)
                     save.writerow(ss_use)            
 
+
+    return a_matrix, b_matrix, c_matrix
+
+
+def do_regression2(img_matrix, t_martix,row,col):
+    ## use all points
+    a_matrix = np.zeros((row, col))
+    b_matrix = np.zeros((row, col))
+    c_matrix = np.zeros((row, col))
+    for i in range(row):
+        for j in range(col):
+
+
+            ss_temp = []
+            t_temp = [] #this array restore the hour 
+            for t in range(total_image_num):
+                if img_matrix[t][i][j] > 0:
+                    ss_temp.append(img_matrix[t][i][j]) # temporary matrix to secure the sequence of value in different time
+                    t_temp.append(t_martix[t]) # temporary matrix to secure the hours correlate to the m_temp
+
+            if len(t_temp)>5 :
+                try:
+                    [popt, pcov] = curve_fit(regression_form, t_temp, ss_temp,maxfev = 1000,p0=[13,0.011,1])
+                    a_matrix[i][j] = popt[0]
+                    b_matrix[i][j] = popt[1]
+                    c_matrix[i][j] = popt[2]
+                    if b_matrix[i][j]<0:
+                        a_matrix[i][j] = 0
+                        b_matrix[i][j] = 0
+                        c_matrix[i][j] = 0                        
+                except:
+                    a_matrix[i][j] = 0
+                    b_matrix[i][j] = 0
+                    c_matrix[i][j] = 0
+                    continue
 
     return a_matrix, b_matrix, c_matrix
 #save array into envi_file:
@@ -124,13 +163,17 @@ def save_as_envi(img_matrix):
 ########### statistic
 # image_statistic(img_matrix,row,col)
 ########### regression
-# do_regression(img_matrix,t_martix,row,col)
+do_regression(img_matrix,t_martix,row,col)
 
-result = do_regression(img_matrix,t_martix,row,col)
+result = do_regression2(img_matrix,t_martix,row,col)
 a_matrix = result[0]
 b_matrix = result[1]
 c_matrix = result[2]
-
+############ export data
 envi.save_image('b.hdr', b_matrix)
 envi.save_image('a.hdr', a_matrix)
 envi.save_image('c.hdr', c_matrix)
+# with open('t_matrix.csv','w') as csvfile:
+#     save = csv.writer(csvfile, delimiter = ',')
+#     save.writerow(t_martix)
+print(t_martix)
