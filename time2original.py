@@ -112,9 +112,11 @@ def compute_t3(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
     envi.save_image('t_method3_05.hdr', t_method)
     envi.save_image('t_max3_05.hdr', t_max)
     envi.save_image('t_decay3_05.hdr', t_decay)
-def generate_max(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
+def image_stactistic(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
     t_max = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
+    t_min = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
     ss_max = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
+    ss_min = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
     max_avg = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
 
     for i in range(0,img_matrix.shape[0]):
@@ -123,12 +125,47 @@ def generate_max(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
             indexx = np.argmax(img_matrix[i][j])
             t_max[i][j] = t_matrix[indexx]
             ss_max[i][j] = img_matrix[i][j][indexx]
-            max_avg[i][j] = ss_max[i][j]- init_state[i][j]
+# to avoid seize no data as t_min and ss_min
+            img_temp = []
+            t_temp = []
+            for k in range(len(img_matrix[i][j])):
+                if img_matrix[i][j][k] !=0:
+                    img_temp.append(img_matrix[i][j][k])
+                    t_temp.append(t_matrix[k])
+            if len(img_temp)>0:
+                indexy = np.argmin(img_temp)
+                t_min[i][j] = t_temp[indexy] + 8.5 # because GOCI start from 8:30, but the time start from 0. As for t_max, I use seadas to change that
+                ss_min[i][j] = img_temp[indexy]
+########################################################
+            # max_avg[i][j] = ss_max[i][j]- init_state[i][j]
 
-    envi.save_image('t_max.hdr', t_max)
+    # envi.save_image('t_max.hdr', t_max)
+    envi.save_image('t_min.hdr', t_min)
     # envi.save_image('ss_max.hdr', ss_max)
+    envi.save_image('ss_min.hdr', ss_min)
     # envi.save_image('max-avg.hdr', max_avg)
 
-# compute_t2(a_50,b_50,c_50,img_matrix,t_matrix,init_state)
-
-generate_max(a_50,b_50,c_50,img_matrix,t_matrix,init_state)
+def compute_t4(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
+    # this function is used to fullfish Prof. Wang's request (20190905)
+    k1 = 0.1 # the only varibale to adjust
+    k2 = 1-k1
+    t_method = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
+    t_max = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
+    t_decay = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
+    for i in range(0,img_matrix.shape[0]):
+        for j in range(0,img_matrix.shape[1]):
+            threshold = k1*max_variation[i][j] + k2*init_state[i][j]
+            if b_50[i][j]!=0:
+                t0 = fsolve(f,0,[a_50[i][j],b_50[i][j],c_50[i][j],threshold])
+                t_method[i][j] = t0
+                indexx = np.argmax(img_matrix[i][j])
+                t_max[i][j] = t_matrix[indexx]
+                t_decay[i][j] = t_method[i][j] - t_max[i][j]
+            if t0 <=0 or t_decay[i][j]<0:
+                t_method[i][j] = -1
+                t_decay[i][j] = -1
+    envi.save_image('t_method4_01.hdr', t_method)
+    # envi.save_image('t_max2_01.hdr', t_max)
+    # envi.save_image('t_decay4_05.hdr', t_decay)
+# compute_t4(a_50,b_50,c_50,img_matrix,t_matrix,init_state)
+image_stactistic(a_50,b_50,c_50,img_matrix,t_matrix,init_state)
