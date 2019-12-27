@@ -12,25 +12,25 @@ import matplotlib.pyplot as plt
 import cv2
 
 ## read images
-img= envi.open('D:/HOMEWORK/rslab/IOCS_2019/regression/img_matrix2.hdr')
+img= envi.open('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/img_matrix2.hdr')
 img_matrix = img.load()
 img_matrix = img_matrix.read_bands(range(0,img_matrix.shape[2]))
-## read_50
-a_50 = envi.open('D:/HOMEWORK/rslab/IOCS_2019/regression/a.hdr')
-b_50 = envi.open('D:/HOMEWORK/rslab/IOCS_2019/regression/b.hdr')
-c_50 = envi.open('D:/HOMEWORK/rslab/IOCS_2019/regression/c.hdr')
-a_50 = a_50.load()
-a_50 = a_50.read_band(0)
-b_50 = b_50.load()
-b_50 = b_50.read_band(0)
-c_50 = c_50.load()
-c_50 = c_50.read_band(0)
+## read a b c (regression result)
+a = envi.open('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/a.hdr')
+b = envi.open('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/b.hdr')
+c = envi.open('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/c.hdr')
+a = a.load()
+a = a.read_band(0)
+b = b.load()
+b = b.read_band(0)
+c = c.load()
+c = c.read_band(0)
 ## read statistic result
-max_variation = envi.open('D:/HOMEWORK/rslab/IOCS_2019/regression/max_difference.hdr')
+max_variation = envi.open('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/max_difference.hdr')
 max_variation = max_variation.load()
 max_variation = max_variation.read_band(0)
 ## read 4-days mean image
-init_state = envi.open('D:/HOMEWORK/rslab/IOCS_2019/regression/0804_0807_mean.hdr')
+init_state = envi.open('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/0804_0807_mean.hdr')
 init_state = init_state.load()
 init_state = init_state.read_band(0)
 ## read time_matrix (hours)
@@ -43,6 +43,7 @@ def f(t,p):
     c = p[2]
     threshold = p[3]
     return a*np.exp(-b*t)+c-threshold
+## Now we choose compute_t4
 def compute_t(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
     k = 0.1
     t_method = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
@@ -139,15 +140,15 @@ def image_stactistic(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
 ########################################################
             # max_avg[i][j] = ss_max[i][j]- init_state[i][j]
 
-    # envi.save_image('t_max.hdr', t_max)
-    envi.save_image('t_min.hdr', t_min)
-    # envi.save_image('ss_max.hdr', ss_max)
-    envi.save_image('ss_min.hdr', ss_min)
-    # envi.save_image('max-avg.hdr', max_avg)
+    envi.save_image('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/t_max.hdr', t_max)
+    # envi.save_image('t_min.hdr', t_min)
+    envi.save_image('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/ss_max.hdr', ss_max)
+    # envi.save_image('ss_min.hdr', ss_min)
+    # envi.save_image('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/max-avg.hdr', max_avg)
 
 def compute_t4(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
     # this function is used to fullfish Prof. Wang's request (20190905)
-    k1 = 0.1 # the only varibale to adjust
+    k1 = 0.5 # the only varibale to adjust
     k2 = 1-k1
     t_method = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
     t_max = np.zeros((img_matrix.shape[0], img_matrix.shape[1]))
@@ -155,6 +156,7 @@ def compute_t4(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
     for i in range(0,img_matrix.shape[0]):
         for j in range(0,img_matrix.shape[1]):
             threshold = k1*max_variation[i][j] + k2*init_state[i][j]
+            t0 = -1
             if b_50[i][j]!=0:
                 t0 = fsolve(f,0,[a_50[i][j],b_50[i][j],c_50[i][j],threshold])
                 t_method[i][j] = t0
@@ -164,8 +166,8 @@ def compute_t4(a_50,b_50,c_50,img_matrix,t_matrix,init_state):
             if t0 <=0 or t_decay[i][j]<0:
                 t_method[i][j] = -1
                 t_decay[i][j] = -1
-    envi.save_image('t_method4_01.hdr', t_method)
+    envi.save_image('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/td50.hdr', t_method)
     # envi.save_image('t_max2_01.hdr', t_max)
     # envi.save_image('t_decay4_05.hdr', t_decay)
-# compute_t4(a_50,b_50,c_50,img_matrix,t_matrix,init_state)
-image_stactistic(a_50,b_50,c_50,img_matrix,t_matrix,init_state)
+compute_t4(a,b,c,img_matrix,t_matrix,init_state)
+# image_stactistic(a,b,c,img_matrix,t_matrix,init_state)
