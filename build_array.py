@@ -1,5 +1,10 @@
 # python build_array.py
-# cd 'D:/HOMEWORK/rslab/IOCS_2019/code'
+"""
+This script is designed for 3 purposes:
+1. build a 3D image-array.
+2. conduct exponential regression to show the decaying pattern of Suspended Sediment concentration
+3. conduct statistics
+"""
 import os
 import shutil
 import numpy as np
@@ -20,7 +25,6 @@ standard_load = standard_img.load()
 row = standard_load.shape[0]
 col = standard_load.shape[1]
 
-    #####fist loop: enter the second folder
 # create a matrix to store time series
 t_matrix = []
 for i in range(19):
@@ -77,194 +81,6 @@ def regression_form2(t,a,b,):
     with np.errstate(divide = 'ignore'):
         s = np.float64(a*np.exp(-1*b*t))
     return s
-
-# we choose regression 5 and 6 for now
-"""
-def do_regression(img_matrix, t_matrix,row,col):
-    # start from the point right after the max point.
-    a_matrix = np.zeros((row, col))
-    b_matrix = np.zeros((row, col))
-    c_matrix = np.zeros((row, col))
-    ls = np.zeros((row, col))
-    for i in range(row):
-        for j in range(col):
-            ss_temp = []
-            t_temp = [] #this array restore the hour 
-            for t in range(total_image_num):
-                if img_matrix[t][i][j] > 0:
-                    ss_temp.append(img_matrix[t][i][j]) # temporary matrix to secure the sequence of value in different time
-                    t_temp.append(t_matrix[t]) # temporary matrix to secure the hours correlate to the m_temp
-            ## find the max value
-            t_use = [] # matrix used to regression
-            ss_use = []
-
-            if len(t_temp) >5:
-                for n in range(ss_temp.index(max(ss_temp))+1, len(ss_temp)):
-                    t_use.append(t_temp[n])
-                    ss_use.append(ss_temp[n])
-                            # regression: concentration = a*e^(-b*t)
-
-                    
-            if len(t_use)>5 :
-                c_matrix[i][j] =min(ss_use) ## let c = min(ss_use)
-                for k in range(len(ss_use)):
-                    ss_use[k] = ss_use[k] - min(ss_use)
-                 # regression: concentration = a*e^(-b*t)+c
-            if len(t_use)>5 :
-
-                try:
-                    [popt, pcov] = curve_fit(regression_form, t_use, ss_use,maxfev = 50,p0=[5,0.011],bounds=(0,[15,20]))
-                    a_matrix[i][j] = popt[0]
-                    b_matrix[i][j] = popt[1]
-                except:
-                    a_matrix[i][j] = 0
-                    b_matrix[i][j] = 0
-                    c_matrix[i][j] = 0
-                    continue
-                for n in range(ss_temp.index(max(ss_temp))+1, len(ss_temp)):
-                    y = np.float64(a_matrix[i][j]*np.exp(-1*b_matrix[i][j]*t_temp[n])+c_matrix[i][j])
-                    ls[i][j] = ls[i][j] + np.power((y-ss_temp[n]),2)                   
-    envi.save_image('a_fixc.hdr', b_matrix)
-    envi.save_image('b_fixc.hdr', b_matrix)
-    envi.save_image('c_fixc.hdr', c_matrix)
-    envi.save_image('least_square_fixc.hdr', ls)
-"""
-"""
-def do_regression2(img_matrix, t_matrix,row,col):
-    ## use all points
-    a_matrix = np.zeros((row, col))
-    b_matrix = np.zeros((row, col))
-    c_matrix = np.zeros((row, col))
-    ls = np.zeros((row, col))
-    for i in range(row):
-        for j in range(col):
-            ss_use = []
-            t_use = []
-            ss_temp = []
-            t_temp = [] #this array restore the hour 
-            for t in range(total_image_num):
-                if img_matrix[t][i][j] > 0:
-                    ss_temp.append(img_matrix[t][i][j]) # temporary matrix to secure the sequence of value in different time
-                    t_temp.append(t_matrix[t]) # temporary matrix to secure the hours correlate to the m_temp
-
-            if len(t_temp)>5 :
-                for n in range(ss_temp.index(max(ss_temp))+1, len(ss_temp)):
-                    t_use.append(t_temp[n])
-                    ss_use.append(ss_temp[n])
-                try:
-                    [popt, pcov] = curve_fit(regression_form, t_temp, ss_temp,maxfev = 1000,p0=[13,0.011,1],bounds=(0,[np.inf,np.inf,10]))
-                    a_matrix[i][j] = popt[0]
-                    b_matrix[i][j] = popt[1]
-                    c_matrix[i][j] = popt[2]                    
-                except:
-                    a_matrix[i][j] = 0
-                    b_matrix[i][j] = 0
-                    c_matrix[i][j] = 0
-                    continue
-                for n in range(ss_temp.index(max(ss_temp))+1, len(ss_temp)):
-                    y = np.float64(a_matrix[i][j]*np.exp(-1*b_matrix[i][j]*t_temp[n])+c_matrix[i][j])
-                    ls[i][j] = ls[i][j] + np.power((y-ss_temp[n]),2)
-    envi.save_image('a_all.hdr', b_matrix)
-    envi.save_image('b_all.hdr', b_matrix)
-    envi.save_image('c_all.hdr', c_matrix)
-    envi.save_image('least_square_all.hdr', ls)
-"""
-"""
-def do_regression3(img_matrix, t_matrix,row,col):
-    # do regression from higher but not highest value by using threshold
-    a_matrix = np.zeros((row, col))
-    b_matrix = np.zeros((row, col))
-    c_matrix = np.zeros((row, col))
-    num =0
-    for i in range(row):
-        for j in range(col):
-            ss_temp = []
-            t_temp = [] #this array restore the hour 
-            for t in range(total_image_num):
-                if img_matrix[t][i][j] > 0:
-                    ss_temp.append(img_matrix[t][i][j]) # temporary matrix to secure the sequence of value in different time
-                    t_temp.append(t_matrix[t]) # temporary matrix to secure the hours correlate to the m_temp
-            
-            
-            ## define threshold
-            n = 0
-            
-            ss_use =[]
-            t_use=[]
-            if len(ss_temp)>5:
-                threshold = 0.8*np.mean(ss_temp)
-            
-                for k in range(len(ss_temp)):
-                    if ss_temp[k]<threshold:
-                        n = n+1
-                    else:
-                        break
-
-                for k in range(n,len(ss_temp)):
-                    ss_use.append(ss_temp[k])
-                    t_use.append(t_temp[k])
-            if len(t_use)>5 :
-                for n in range(ss_temp.index(max(ss_temp))+1, len(ss_temp)):
-                    t_use.append(t_temp[n])
-                    ss_use.append(ss_temp[n])
-                try:
-                    [popt, pcov] = curve_fit(regression_form, t_use, ss_use,maxfev = 1000,p0=[13,0.011,1],bounds=(0,[np.inf,np.inf,10]))
-                    a_matrix[i][j] = popt[0]
-                    b_matrix[i][j] = popt[1]
-                    c_matrix[i][j] = popt[2]
-                    num = num+1
-                except:
-                    a_matrix[i][j] = 0
-                    b_matrix[i][j] = 0
-                    c_matrix[i][j] = 0
-                    continue
-    print('num:',num)
-    return a_matrix, b_matrix, c_matrix
-
-def do_regression4(img_matrix, t_matrix,row,col):
-    # start from the point right after the max point.
-    a_matrix = np.zeros((row, col))
-    b_matrix = np.zeros((row, col))
-    c_matrix = np.zeros((row, col))
-    ls = np.zeros((row, col))
-
-    for i in range(row):
-        for j in range(col):
-
-
-            ss_temp = []
-            t_temp = [] #this array restore the hour 
-            for t in range(total_image_num):
-                if img_matrix[t][i][j] > 0:
-                    ss_temp.append(img_matrix[t][i][j]) # temporary matrix to secure the sequence of value in different time
-                    t_temp.append(t_matrix[t]) # temporary matrix to secure the hours correlate to the m_temp
-            ## find the max value
-            t_use = [] # matrix used to regression
-            ss_use = []
-            if len(t_temp) >5:
-                for n in range(ss_temp.index(max(ss_temp))+1, len(ss_temp)):
-                    t_use.append(t_temp[n])
-                    ss_use.append(ss_temp[n])
-                            # regression: concentration = a*e^(-b*t)+c
-            if len(t_use)>5 :
-                try:
-                    [popt, pcov] = curve_fit(regression_form, t_use, ss_use,maxfev = 800,p0=[1,0.011,0.5],bounds=(0,[np.inf,20,10]))
-                    a_matrix[i][j] = popt[0]
-                    b_matrix[i][j] = popt[1]
-                    c_matrix[i][j] = popt[2]
-                except:
-                    a_matrix[i][j] = 0
-                    b_matrix[i][j] = 0
-                    c_matrix[i][j] = 0
-                    continue
-                # for n in range(ss_temp.index(max(ss_temp))+1, len(ss_temp)):
-                    # y = np.float64(a_matrix[i][j]*np.exp(-1*b_matrix[i][j]*t_temp[n])+c_matrix[i][j])
-                    # ls[i][j] = ls[i][j] + np.power((y-ss_temp[n]),2)
-    envi.save_image('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/b3.hdr', b_matrix)
-    envi.save_image('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/a3.hdr', a_matrix)
-    envi.save_image('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/c3.hdr', c_matrix)
-    # envi.save_image('D:/HOMEWORK/rslab/IOCS_2019/code/New_range/least_square_new_800.hdr', ls)
-"""
 
 def do_regression5(img_matrix, t_matrix,row,col):
     # start from the point right after the max point for problematic area.
