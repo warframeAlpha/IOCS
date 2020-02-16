@@ -75,11 +75,9 @@ for i in range(row):
                 a_matrix[i][j] = -1
                 b_matrix[i][j] = -1
                 c_matrix[i][j] = -1
-                fuck = fuck +1
                 continue
 
 envi.save_image('a_lmfit.hdr', b_matrix)
 envi.save_image('b_lmfit.hdr', b_matrix)
 envi.save_image('c_lmfit.hdr', c_matrix)
 print('ya:', ya)
-print('fuck:', fuck)
